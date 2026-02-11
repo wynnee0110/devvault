@@ -1,12 +1,55 @@
 import { app, BrowserWindow, Menu } from 'electron'
-import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import { ipcMain } from 'electron';
+import fs from 'fs/promises';
 
-
-const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const DATA_PATH = path.join(app.getPath('userData'), 'vault.json');
 
+// Helper: Read Data
+async function readData() {
+  try {
+    const data = await fs.readFile(DATA_PATH, 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+    // If file doesn't exist, return empty array
+    return [];
+  }
+}
+
+// Helper: Write Data
+async function writeData(data: any) {
+  await fs.writeFile(DATA_PATH, JSON.stringify(data, null, 2));
+}
+
+// 2. Setup API Handlers (The "Backend" Endpoints)
+ipcMain.handle('vault:get', async () => {
+  return await readData();
+});
+
+ipcMain.handle('vault:save', async (_, newItem) => {
+  const items = await readData();
+  const updatedItems = [newItem, ...items];
+  await writeData(updatedItems);
+  return updatedItems;
+});
+
+ipcMain.handle('vault:update', async (_, { id, updates }) => {
+  const items = await readData();
+  const updatedItems = items.map((item: any) => 
+    item.id === id ? { ...item, ...updates } : item
+  );
+  await writeData(updatedItems);
+  return updatedItems;
+});
+
+ipcMain.handle('vault:delete', async (_, id) => {
+  const items = await readData();
+  const updatedItems = items.filter((item: any) => item.id !== id);
+  await writeData(updatedItems);
+  return updatedItems;
+});
 // The built directory structure
 //
 // ├─┬─┬ dist

@@ -1,5 +1,15 @@
 import { ipcRenderer, contextBridge } from 'electron'
 
+
+// Expose protected methods that allow the renderer process to use
+// the ipcRenderer without exposing the entire object
+contextBridge.exposeInMainWorld('vaultApi', {
+  getEntries: () => ipcRenderer.invoke('vault:get'),
+  saveEntry: (entry: any) => ipcRenderer.invoke('vault:save', entry),
+  updateEntry: (id: number, updates: any) => ipcRenderer.invoke('vault:update', { id, updates }),
+  deleteEntry: (id: number) => ipcRenderer.invoke('vault:delete', id),
+});
+
 // --------- Expose some API to the Renderer process ---------
 contextBridge.exposeInMainWorld('ipcRenderer', {
   on(...args: Parameters<typeof ipcRenderer.on>) {

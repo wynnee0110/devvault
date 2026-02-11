@@ -1,5 +1,11 @@
 "use strict";
 const electron = require("electron");
+electron.contextBridge.exposeInMainWorld("vaultApi", {
+  getEntries: () => electron.ipcRenderer.invoke("vault:get"),
+  saveEntry: (entry) => electron.ipcRenderer.invoke("vault:save", entry),
+  updateEntry: (id, updates) => electron.ipcRenderer.invoke("vault:update", { id, updates }),
+  deleteEntry: (id) => electron.ipcRenderer.invoke("vault:delete", id)
+});
 electron.contextBridge.exposeInMainWorld("ipcRenderer", {
   on(...args) {
     const [channel, listener] = args;
